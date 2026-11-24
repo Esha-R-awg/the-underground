@@ -41,3 +41,23 @@ Running log of how Kiro was used at each stage of the build, for the hackathon w
 **Why**: Property-based tests catch edge cases that example-based tests miss — the invariants in the brief are exactly the kind of thing fast-check is built for.
 
 **What happened**: All 38 tests passed on the first run with no code changes needed.
+
+---
+
+## M3 — Village UI
+
+**Feature used**: Kiro scaffolded the Vite + React + TypeScript app, wrote all UI source files (useSimulation hook, Canvas 2D renderer, CharacterPanel, GossipFeed, EventButtons, App layout), and wired them to the real engine.
+
+**Why**: Building the UI as a thin shell over the engine — no simulation logic duplicated — means the engine tests remain the ground truth.
+
+**What happened**: Built and type-checked cleanly on the first pass. Dev server started at `localhost:5173`. 38 engine tests still pass, unmodified.
+
+---
+
+## M4 — Haunted polish
+
+**Feature used**: Kiro expanded the Canvas 2D renderer with pre-rendered offscreen layers: fog (3 drifting layers, seamless wrap), moonlight gradient, vignette, lantern flicker at every location, blackout overlay, church shake + echo ring on Missing Bell, stranger fade-in on Stranger Arrives, and ghostly character trails. `prefers-reduced-motion` disables all animation except static vignette and moonlight.
+
+**Why**: All effects use pre-rendered offscreen canvases and simple trigonometry — no CSS blur, no WebGL, no particle systems over 150 — keeping it smooth on the Intel Iris Xe.
+
+**What happened**: Build clean, 38 tests still passing, dev server up.

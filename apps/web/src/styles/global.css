@@ -1,0 +1,228 @@
+:root {
+  --color-bg:        #1a1428;
+  --color-bg-alt:    #12101e;
+  --color-bg-panel:  #221a35;
+  --color-border:    #3a2d55;
+  --color-highlight: #b8a4d8;
+  --color-lantern:   #e8a040;
+  --color-text:      #e0d8f0;
+  --color-text-dim:  #8878a8;
+  --color-positive:  #7ec87e;
+  --color-negative:  #c87e7e;
+  --color-neutral:   #a0a0c0;
+
+  --font-main: 'Georgia', serif;
+  --font-mono: 'Courier New', monospace;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-main);
+  overflow: hidden;
+}
+
+/* ── App shell ── */
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 1fr 280px;
+  grid-template-areas:
+    "toolbar  toolbar"
+    "canvas   panel"
+    "feed     panel";
+  width: 100vw;
+  height: 100vh;
+  min-width: 900px;
+}
+
+/* ── Toolbar ── */
+.toolbar {
+  grid-area: toolbar;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--color-bg-alt);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.toolbar h1 {
+  font-size: 1.1rem;
+  color: var(--color-highlight);
+  letter-spacing: 0.08em;
+  margin-right: auto;
+}
+
+/* ── Canvas area ── */
+.canvas-wrap {
+  grid-area: canvas;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.canvas-wrap canvas {
+  display: block;
+  cursor: pointer;
+}
+
+/* ── Gossip feed ── */
+.gossip-feed {
+  grid-area: feed;
+  height: 130px;
+  background: var(--color-bg-alt);
+  border-top: 1px solid var(--color-border);
+  overflow-y: auto;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-text-dim);
+}
+
+.gossip-feed .feed-line {
+  padding: 2px 0;
+  border-bottom: 1px solid #2a2040;
+  color: var(--color-text-dim);
+}
+
+.gossip-feed .feed-line:last-child {
+  color: var(--color-highlight);
+}
+
+/* ── Character panel ── */
+.character-panel {
+  grid-area: panel;
+  background: var(--color-bg-panel);
+  border-left: 1px solid var(--color-border);
+  overflow-y: auto;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.character-panel .empty-state {
+  color: var(--color-text-dim);
+  font-size: 0.85rem;
+  text-align: center;
+  margin-top: 40px;
+  line-height: 1.6;
+}
+
+.character-panel h2 {
+  font-size: 1.1rem;
+  color: var(--color-highlight);
+}
+
+.character-panel .job {
+  font-size: 0.8rem;
+  color: var(--color-text-dim);
+  margin-top: 2px;
+}
+
+/* ── Bars ── */
+.bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--color-text-dim);
+}
+
+.bar-track {
+  height: 6px;
+  background: #2a2040;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+/* ── Section headers inside panel ── */
+.panel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panel-section h3 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-dim);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 4px;
+}
+
+/* ── Memory card ── */
+.memory-card {
+  background: #1e1630;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.memory-card .memory-text {
+  font-size: 0.8rem;
+  color: var(--color-text);
+  line-height: 1.4;
+}
+
+.memory-card .memory-source {
+  font-size: 0.7rem;
+  color: var(--color-text-dim);
+}
+
+/* ── Event buttons ── */
+.event-btn {
+  padding: 7px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: #2a1e42;
+  color: var(--color-text);
+  font-family: var(--font-main);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.event-btn:hover {
+  background: #3a2a58;
+  border-color: var(--color-highlight);
+  color: var(--color-highlight);
+}
+
+.event-btn:active {
+  background: #4a3a68;
+}
+
+/* ── Tick counter ── */
+.tick-info {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-text-dim);
+  margin-left: auto;
+}
