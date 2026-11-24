@@ -4,6 +4,9 @@ dist/
 .env.*
 *.local
 
+# Engine compiled output (built from source on demand)
+packages/engine/dist/
+
 # OS
 .DS_Store
 Thumbs.db

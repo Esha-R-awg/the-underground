@@ -61,3 +61,13 @@ Running log of how Kiro was used at each stage of the build, for the hackathon w
 **Why**: All effects use pre-rendered offscreen canvases and simple trigonometry — no CSS blur, no WebGL, no particle systems over 150 — keeping it smooth on the Intel Iris Xe.
 
 **What happened**: Build clean, 38 tests still passing, dev server up.
+
+---
+
+## M5 — MCP server
+
+**Feature used**: Kiro scaffolded the full MCP server package, wrote all five tool handlers, wrote 19 unit tests, configured the workspace MCP config at `.kiro/settings/mcp.json`, and ran the complete test suite.
+
+**Why**: The MCP server wraps the engine without duplicating logic — each tool handler is a thin function that calls into the same engine instance. This keeps the engine as the single source of truth.
+
+**What happened**: First build attempt had 28 errors across two root causes — engine imports used `/src/index.js` subpath (not valid for NodeNext consumers), and the engine package had no compiled `dist/`. Fixed by: (1) adding a `dist` exports condition to engine `package.json`, (2) adding `skipLibCheck` to engine `tsconfig.json` to suppress a vite/rollup type conflict in hoisted `node_modules`, (3) building the engine to `dist/` before the MCP server build. One test failure: "gossip spreads after blackout" assumed gossip would fire after blackout, but all characters already witnessed it so there was nothing to spread — test rewritten to use `missing_bell` instead (correct engine behaviour). Final: 57 tests total, 0 failures. MCP config written to `.kiro/settings/mcp.json`. Live tool verification pending Kiro MCP panel reconnect.

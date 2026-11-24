@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "underground-world": {
+      "command": "node",
+      "args": ["apps/mcp-server/dist/index.js"],
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "list_characters",
+        "get_world_summary",
+        "get_character_memory",
+        "trigger_event",
+        "advance_time"
+      ]
+    }
+  }
+}
