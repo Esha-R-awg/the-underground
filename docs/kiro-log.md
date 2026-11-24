@@ -31,3 +31,13 @@ Running log of how Kiro was used at each stage of the build, for the hackathon w
 **Why**: Writing tests alongside the code lets failures surface immediately in small named pieces rather than in a big rewrite later.
 
 **What happened**: First run had 3 failures — phase boundary was off-by-one (`< 12` cut off tick 12 as night; fixed to `>= 1 && <= 12`), Odalys location test failed for the same reason, and a "different seeds produce different worlds" test was flawed (no events queued means the RNG never fires, so schedules are purely tick-based and identical regardless of seed; test rewritten to verify RNG sequences differ). All three fixed and confirmed. Final result: 4 test files, 20 tests, 0 failures.
+
+---
+
+## M2 — Events and gossip property tests
+
+**Feature used**: Kiro wrote `events.test.ts` covering all three events with unit tests (12 tests) and all 6 engine invariants from section 7 of the brief with fast-check property tests (6 properties, 100 examples each).
+
+**Why**: Property-based tests catch edge cases that example-based tests miss — the invariants in the brief are exactly the kind of thing fast-check is built for.
+
+**What happened**: All 38 tests passed on the first run with no code changes needed.
