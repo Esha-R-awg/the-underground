@@ -2,10 +2,10 @@ import { LOCATION_NAMES } from "@the-underground/engine";
 import { world } from "../world-instance.js";
 
 function moodWord(mood: number): string {
-  if (mood >  0.6) return "calm";
-  if (mood >  0.2) return "content";
-  if (mood > -0.2) return "uneasy";
-  if (mood > -0.6) return "frightened";
+  if (mood >  0.5)  return "content";
+  if (mood > -0.1)  return "calm";
+  if (mood > -0.25) return "uneasy";
+  if (mood > -0.6)  return "frightened";
   return "terrified";
 }
 

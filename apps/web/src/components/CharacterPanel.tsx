@@ -1,4 +1,5 @@
 import type { Character, World } from '@the-underground/engine';
+import { LOCATION_NAMES } from '@the-underground/engine';
 import { CHARACTER_COLOURS } from '../canvas/renderer';
 
 interface Props {
@@ -8,14 +9,14 @@ interface Props {
 
 function moodColour(mood: number): string {
   if (mood > 0.2) return 'var(--color-positive)';
-  if (mood < -0.2) return 'var(--color-negative)';
+  if (mood < -0.1) return 'var(--color-negative)';
   return 'var(--color-neutral)';
 }
 
 function moodLabel(mood: number): string {
-  if (mood > 0.6) return 'Calm';
-  if (mood > 0.2) return 'Content';
-  if (mood > -0.2) return 'Uneasy';
+  if (mood > 0.5) return 'Content';
+  if (mood > -0.1) return 'Calm';
+  if (mood > -0.25) return 'Uneasy';
   if (mood > -0.6) return 'Frightened';
   return 'Terrified';
 }
@@ -35,6 +36,14 @@ export function CharacterPanel({ character, world }: Props) {
     return (
       <aside className="character-panel">
         <p className="empty-state">Click a character<br />to inspect them.</p>
+        <div className="legend">
+          <h3>How to read the village</h3>
+          <div className="legend-row"><span className="dot gold" />Gold pulse: just witnessed an event</div>
+          <div className="legend-row"><span className="dot blue" />Blue pulse: just heard a rumour</div>
+          <div className="legend-row"><span className="dot badge">2</span>Number of memories they hold</div>
+          <div className="legend-row"><span className="dot red" />Red ring: frightened</div>
+          <p className="legend-note">Rumours lose a little confidence every time they are retold.</p>
+        </div>
       </aside>
     );
   }
@@ -47,7 +56,9 @@ export function CharacterPanel({ character, world }: Props) {
       {/* Header */}
       <div>
         <h2 style={{ color: colour }}>{character.name}</h2>
-        <div className="job">{character.job}</div>
+        <div className="job">
+          {character.job} &middot; at the {LOCATION_NAMES[character.location] ?? character.location}
+        </div>
       </div>
 
       {/* Mood */}

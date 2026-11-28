@@ -206,14 +206,16 @@ describe("engine invariants — property-based", () => {
               );
               for (const m of learned) {
                 if (m.heardFrom === "witnessed") continue;
-                // Source must have been in the same location and known the event
-                const source = before.characters.find(
-                  (s) =>
-                    s.id === m.heardFrom &&
-                    s.location === c.location &&
-                    s.memories.some((sm) => sm.eventId === m.eventId)
-                );
-                expect(source).toBeDefined();
+                // Gossip happens after villagers have moved this tick, so the speaker
+                // must be in the same place as the listener in the post-tick world,
+                // and must already have known the event before this tick.
+                const sourceNow = world.characters.find((s) => s.id === m.heardFrom);
+                const sourceBefore = before.characters.find((s) => s.id === m.heardFrom);
+                expect(sourceNow).toBeDefined();
+                expect(sourceNow!.location).toBe(c.location);
+                expect(
+                  sourceBefore!.memories.some((sm) => sm.eventId === m.eventId)
+                ).toBe(true);
               }
             }
           }

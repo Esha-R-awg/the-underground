@@ -1,30 +1,35 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { World } from '@the-underground/engine';
 import {
-  CANVAS_W, CANVAS_H,
-  LOCATION_POSITIONS,
-  buildMapLayer,
-  buildMoonlightLayer,
-  buildVignetteLayer,
+  makeView,
+  buildSprites,
+  buildBackdrop,
+  buildVignette,
   buildFogLayers,
   buildLanterns,
   tickFog,
   tickLanterns,
-  drawFog,
-  drawLanterns,
+  targetPositions,
+  hitTest,
+  diffEffects,
+  shakeOffset,
+  drawBuildings,
+  drawMillBlades,
+  drawNightTint,
   drawBlackout,
-  drawEventEffects,
-  drawChurchShake,
+  drawLanterns,
+  drawFog,
   drawCharacters,
-  shouldTriggerBellEffect,
-  shouldTriggerStrangerEffect,
+  drawEffects,
 } from './renderer';
 import type {
+  View,
+  Sprites,
   FogLayer,
   LanternState,
-  EventEffect,
-  ShakeState,
   TrailPoint,
+  Effect,
+  ShakeState,
 } from './renderer';
 
 interface Props {
@@ -33,204 +38,228 @@ interface Props {
   onSelectCharacter: (id: string | null) => void;
 }
 
-const LERP_SPEED = 0.08;
-const TRAIL_MAX  = 5;
-const TRAIL_FREQ = 4; // add a trail point every N frames
+interface Layers {
+  view: View;
+  night: HTMLCanvasElement;
+  day: HTMLCanvasElement;
+  vignette: HTMLCanvasElement;
+  sprites: Sprites;
+  fog: FogLayer[];
+  lanterns: LanternState[];
+}
+
+const LERP_SPEED = 0.07;
+const TRAIL_MAX = 12;
+const TRAIL_EVERY = 3; // frames between trail points
 
 function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 export function VillageCanvas({ world, selectedId, onSelectCharacter }: Props) {
-  const canvasRef   = useRef<HTMLCanvasElement>(null);
-  const visualPos   = useRef<Record<string, { x: number; y: number }>>({});
-  const trails      = useRef<Record<string, TrailPoint[]>>({});
-  const fogLayers   = useRef<FogLayer[]>([]);
-  const lanterns    = useRef<LanternState[]>([]);
-  const effects     = useRef<EventEffect[]>([]);
-  const shake       = useRef<ShakeState | null>(null);
-  const mapLayer    = useRef<HTMLCanvasElement | null>(null);
-  const moonLayer   = useRef<HTMLCanvasElement | null>(null);
-  const vigLayer    = useRef<HTMLCanvasElement | null>(null);
-  const frameCount  = useRef(0);
-  const prevWorld   = useRef<World | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Build offscreen layers once on mount
+  const [size, setSize] = useState({ w: 800, h: 520, dpr: 1 });
+
+  // Live values read by the animation loop (so it does not restart every tick)
+  const worldRef = useRef<World>(world);
+  const selectedRef = useRef<string | null>(selectedId);
+  const hoveredRef = useRef<string | null>(null);
+  const prevWorld = useRef<World | null>(null);
+  const layers = useRef<Layers | null>(null);
+  const positions = useRef<Record<string, { x: number; y: number }>>({});
+  const trails = useRef<Record<string, TrailPoint[]>>({});
+  const effects = useRef<Effect[]>([]);
+  const shake = useRef<ShakeState | null>(null);
+  const dayAmount = useRef(1);
+  const frameCount = useRef(0);
+
+  // Keep canvas sized to its container, and sharp on high-DPI screens
   useEffect(() => {
-    mapLayer.current  = buildMapLayer();
-    moonLayer.current = buildMoonlightLayer();
-    vigLayer.current  = buildVignetteLayer();
-    fogLayers.current = buildFogLayers();
-    lanterns.current  = buildLanterns();
+    const el = wrapRef.current;
+    if (!el) return;
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      const w = Math.max(320, Math.floor(rect.width));
+      const h = Math.max(240, Math.floor(rect.height));
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      setSize((prev) => (prev.w === w && prev.h === h && prev.dpr === dpr ? prev : { w, h, dpr }));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
-    // Initialise visual positions
-    for (const c of world.characters) {
-      const target = LOCATION_POSITIONS[c.location];
-      if (target) {
-        const off = charOffset(c.id);
-        visualPos.current[c.id] = { x: target.x + off.x, y: target.y + off.y };
-        trails.current[c.id]    = [];
-      }
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Detect world events to trigger effects
+  // Track the latest props for the animation loop and detect new events
   useEffect(() => {
-    if (shouldTriggerBellEffect(world, prevWorld.current)) {
-      effects.current.push({ kind: 'bell_echo', startFrame: 0, frame: 0, duration: 50 });
-      shake.current = { frame: 0, duration: 30 };
-    }
-    if (shouldTriggerStrangerEffect(world, prevWorld.current)) {
-      effects.current.push({ kind: 'stranger_fade', startFrame: 0, frame: 0, duration: 60 });
+    worldRef.current = world;
+    const fresh = diffEffects(prevWorld.current, world);
+    for (const fx of fresh) {
+      effects.current.push(fx);
+      if (fx.kind === 'bell_echo') shake.current = { frame: 0, duration: 30 };
     }
     prevWorld.current = world;
   }, [world]);
 
-  // Animation loop
+  useEffect(() => {
+    selectedRef.current = selectedId;
+  }, [selectedId]);
+
+  // Build the static layers whenever the size changes, then run the animation loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const view = makeView(size.w, size.h, size.dpr);
+    canvas.width = Math.round(size.w * size.dpr);
+    canvas.height = Math.round(size.h * size.dpr);
+    layers.current = {
+      view,
+      night: buildBackdrop(view, 'night'),
+      day: buildBackdrop(view, 'day'),
+      vignette: buildVignette(view),
+      sprites: buildSprites(view),
+      fog: buildFogLayers(view),
+      lanterns: buildLanterns(),
+    };
+
     const reduced = prefersReducedMotion();
-    let animId: number;
+    let animId = 0;
 
     const draw = () => {
+      const L = layers.current;
+      if (!L) return;
+      const w = worldRef.current;
       frameCount.current++;
       const fc = frameCount.current;
 
-      // ── 1. Update visual positions (lerp) ──
-      for (const c of world.characters) {
-        const target = LOCATION_POSITIONS[c.location];
-        if (!target) continue;
-        const off = charOffset(c.id);
-        const tx  = target.x + off.x;
-        const ty  = target.y + off.y;
-        const cur = visualPos.current[c.id];
+      // Where everyone should stand, and move them smoothly there
+      const targets = targetPositions(view, w.characters);
+      const groupSizes: Record<string, number> = {};
+      for (const c of w.characters) {
+        const t = targets[c.id];
+        if (!t) continue;
+        groupSizes[c.id] = t.groupSize;
+        const cur = positions.current[c.id];
         if (!cur) {
-          visualPos.current[c.id] = { x: tx, y: ty };
-          trails.current[c.id]    = [];
-        } else {
-          const prevX = cur.x;
-          const prevY = cur.y;
-          cur.x += (tx - cur.x) * LERP_SPEED;
-          cur.y += (ty - cur.y) * LERP_SPEED;
-
-          // Add trail point if character moved significantly
-          const moved = Math.abs(cur.x - prevX) + Math.abs(cur.y - prevY);
-          if (!reduced && moved > 0.5 && fc % TRAIL_FREQ === 0) {
-            const trail = trails.current[c.id] ?? [];
-            trail.unshift({ x: cur.x, y: cur.y, age: 0 });
-            if (trail.length > TRAIL_MAX) trail.pop();
-            trails.current[c.id] = trail;
-          }
+          positions.current[c.id] = { x: t.x, y: t.y };
+          trails.current[c.id] = [];
+          continue;
+        }
+        const px = cur.x;
+        const py = cur.y;
+        cur.x += (t.x - cur.x) * LERP_SPEED;
+        cur.y += (t.y - cur.y) * LERP_SPEED;
+        if (!reduced && Math.abs(cur.x - px) + Math.abs(cur.y - py) > 0.6 && fc % TRAIL_EVERY === 0) {
+          const trail = trails.current[c.id] ?? [];
+          trail.unshift({ x: cur.x, y: cur.y, age: 0 });
+          if (trail.length > TRAIL_MAX) trail.pop();
+          trails.current[c.id] = trail;
         }
       }
-
-      // Age trail points
-      if (!reduced) {
-        for (const trail of Object.values(trails.current)) {
-          for (const pt of trail) pt.age++;
-        }
+      for (const trail of Object.values(trails.current)) {
+        for (const pt of trail) pt.age++;
       }
 
-      // ── 2. Tick fog and lanterns ──
-      tickFog(fogLayers.current, reduced);
-      tickLanterns(lanterns.current, reduced);
+      // Ease between day and night skies
+      const dayTarget = w.phase === 'day' ? 1 : 0;
+      dayAmount.current += (dayTarget - dayAmount.current) * 0.04;
+      const day = dayAmount.current;
 
-      // ── 3. Advance effects ──
+      tickFog(L.fog, view, reduced);
+      tickLanterns(L.lanterns, reduced);
       for (const fx of effects.current) fx.frame++;
-      effects.current = effects.current.filter(fx => fx.frame < fx.duration);
+      effects.current = effects.current.filter((fx) => fx.frame < fx.duration);
       if (shake.current) {
         shake.current.frame++;
         if (shake.current.frame >= shake.current.duration) shake.current = null;
       }
 
-      // ── 4. Clear ──
-      ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+      // ── Draw ──
+      ctx.setTransform(size.dpr, 0, 0, size.dpr, 0, 0);
+      ctx.clearRect(0, 0, size.w, size.h);
 
-      // ── 5. Map (static offscreen) with optional church shake ──
-      drawChurchShake(ctx, shake.current, reduced, (c) => {
-        if (mapLayer.current) c.drawImage(mapLayer.current, 0, 0);
-      });
+      if (day < 0.99) ctx.drawImage(L.night, 0, 0, size.w, size.h);
+      if (day > 0.01) {
+        ctx.globalAlpha = day;
+        ctx.drawImage(L.day, 0, 0, size.w, size.h);
+        ctx.globalAlpha = 1;
+      }
+      drawNightTint(ctx, view, day);
+      drawBuildings(ctx, view, L.sprites, shakeOffset(shake.current, reduced));
+      drawMillBlades(ctx, view, reduced ? 0.4 : fc * 0.012);
 
-      // ── 6. Moonlight ──
-      if (moonLayer.current) ctx.drawImage(moonLayer.current, 0, 0);
+      if (w.blackoutActive) drawBlackout(ctx, view);
+      drawLanterns(ctx, view, L.lanterns, w.blackoutActive, day);
+      if (!reduced) drawFog(ctx, view, L.fog);
 
-      // ── 7. Lanterns (before blackout, after map) ──
-      drawLanterns(ctx, lanterns.current, world.blackoutActive);
-
-      // ── 8. Blackout overlay ──
-      if (world.blackoutActive) drawBlackout(ctx);
-
-      // ── 9. Fog ──
-      if (!reduced) drawFog(ctx, fogLayers.current);
-
-      // ── 10. Characters + trails ──
-      drawCharacters(ctx, world.characters, visualPos.current, trails.current, selectedId);
-
-      // ── 11. Event effects ──
-      drawEventEffects(ctx, effects.current, reduced);
-
-      // ── 12. Vignette (always on top) ──
-      if (vigLayer.current) ctx.drawImage(vigLayer.current, 0, 0);
+      drawCharacters(
+        ctx,
+        view,
+        w.characters,
+        positions.current,
+        groupSizes,
+        trails.current,
+        selectedRef.current,
+        hoveredRef.current,
+      );
+      drawEffects(ctx, view, effects.current, positions.current, reduced);
+      ctx.drawImage(L.vignette, 0, 0, size.w, size.h);
 
       animId = requestAnimationFrame(draw);
     };
 
     animId = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(animId);
-  }, [world, selectedId]);
+  }, [size]);
 
-  const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  const toCanvasPoint = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect  = canvas.getBoundingClientRect();
-    const scaleX = CANVAS_W / rect.width;
-    const scaleY = CANVAS_H / rect.height;
-    const mx = (e.clientX - rect.left) * scaleX;
-    const my = (e.clientY - rect.top) * scaleY;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }, []);
 
-    let closest: string | null = null;
-    let closestDist = 18;
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const L = layers.current;
+      const pt = toCanvasPoint(e);
+      if (!L || !pt) return;
+      const hit = hitTest(L.view, positions.current, worldRef.current.characters, pt.x, pt.y);
+      onSelectCharacter(hit === selectedRef.current ? null : hit);
+    },
+    [onSelectCharacter, toCanvasPoint],
+  );
 
-    for (const c of world.characters) {
-      const pos = visualPos.current[c.id];
-      if (!pos) continue;
-      const dx   = mx - pos.x;
-      const dy   = my - (pos.y - 24);
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < closestDist) {
-        closestDist = dist;
-        closest     = c.id;
-      }
-    }
-    onSelectCharacter(closest === selectedId ? null : closest);
-  }, [world.characters, selectedId, onSelectCharacter]);
+  const handleMove = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const L = layers.current;
+      const pt = toCanvasPoint(e);
+      if (!L || !pt) return;
+      const hit = hitTest(L.view, positions.current, worldRef.current.characters, pt.x, pt.y);
+      hoveredRef.current = hit;
+      if (canvasRef.current) canvasRef.current.style.cursor = hit ? 'pointer' : 'default';
+    },
+    [toCanvasPoint],
+  );
+
+  const handleLeave = useCallback(() => {
+    hoveredRef.current = null;
+  }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={CANVAS_W}
-      height={CANVAS_H}
-      style={{ maxWidth: '100%', maxHeight: '100%' }}
-      onClick={handleClick}
-      title="Click a character to inspect them"
-    />
+    <div ref={wrapRef} className="canvas-fill">
+      <canvas
+        ref={canvasRef}
+        style={{ width: size.w, height: size.h }}
+        onClick={handleClick}
+        onMouseMove={handleMove}
+        onMouseLeave={handleLeave}
+      />
+    </div>
   );
-}
-
-// Fixed scatter offsets so characters at the same location don't pile up
-const OFFSETS: Record<string, { x: number; y: number }> = {
-  mara:         {  x:  0,  y:  0 },
-  father_edwin: {  x:  0,  y:  0 },
-  tobias:       {  x:  0,  y:  0 },
-  wren:         {  x:  0,  y:  0 },
-  odalys:       { x: -16,  y: 12 },
-  alder:        { x:  16,  y: 12 },
-};
-
-function charOffset(id: string): { x: number; y: number } {
-  return OFFSETS[id] ?? { x: 0, y: 0 };
 }

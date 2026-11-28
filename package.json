@@ -4,7 +4,7 @@
   "type": "module",
   "workspaces": ["packages/*", "apps/*"],
   "scripts": {
-    "dev": "npm run dev -w apps/web",
+    "dev": "npm run build -w packages/engine && npm run dev -w apps/web",
     "test": "npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present"
   }

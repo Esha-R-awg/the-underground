@@ -1,0 +1,5 @@
+After copying the files over your project, delete these old Vite template files
+(they are no longer used). Run in your WSL terminal from the project folder:
+
+rm apps/web/src/App.css apps/web/src/index.css apps/web/public/icons.svg
+rm -r apps/web/src/assets
