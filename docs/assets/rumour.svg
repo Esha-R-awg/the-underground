@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 250" width="960" height="250" role="img" aria-label="How a rumour spreads from Father Edwin to Mara to Tobias, losing confidence each time">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#161029"/><stop offset="1" stop-color="#0d0a1a"/></linearGradient>
+<filter id="g" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect width="960" height="250" rx="16" fill="url(#bg)" stroke="#35294f"/>
+<text x="480" y="36" text-anchor="middle" font-family="Georgia,serif" font-size="18" letter-spacing="3" fill="#c4b3ea">HOW A RUMOUR SPREADS</text>
+<!-- paths -->
+<path id="e1" d="M190 120 L450 120" stroke="#3a2d55" stroke-width="3" stroke-dasharray="6 8" fill="none"/>
+<path id="e2" d="M510 120 L770 120" stroke="#3a2d55" stroke-width="3" stroke-dasharray="6 8" fill="none"/>
+<!-- nodes -->
+<g font-family="Georgia,serif" text-anchor="middle">
+<circle cx="150" cy="120" r="38" fill="#a0c8e8" stroke="#0b0716" stroke-width="3"/><text x="150" y="132" font-size="34" font-weight="700" fill="#150f26">F</text>
+<circle cx="150" cy="120" r="38" fill="none" stroke="#f2c46d" stroke-width="3"><animate attributeName="r" values="38;60;38" keyTimes="0;0.2;1" dur="10s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.9;0;0" keyTimes="0;0.2;1" dur="10s" repeatCount="indefinite"/></circle>
+<text x="150" y="182" font-size="16" fill="#e6def5">Father Edwin</text>
+<text x="150" y="204" font-size="14" fill="#f2c46d" font-style="italic">sees the bell vanish</text>
+
+<circle cx="480" cy="120" r="38" fill="#e8a040" stroke="#0b0716" stroke-width="3"/><text x="480" y="132" font-size="34" font-weight="700" fill="#150f26">M</text>
+<circle cx="480" cy="120" r="38" fill="none" stroke="#8ec8ff" stroke-width="3" opacity="0"><animate attributeName="r" values="38;38;60;38" keyTimes="0;0.38;0.5;1" dur="10s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.38;0.4;0.55;1" dur="10s" repeatCount="indefinite"/></circle>
+<text x="480" y="182" font-size="16" fill="#e6def5">Mara</text>
+<text x="480" y="204" font-size="14" fill="#8ec8ff" font-style="italic">hears it at the Square</text>
+
+<circle cx="810" cy="120" r="38" fill="#c8a0e8" stroke="#0b0716" stroke-width="3"/><text x="810" y="132" font-size="34" font-weight="700" fill="#150f26">T</text>
+<circle cx="810" cy="120" r="38" fill="none" stroke="#8ec8ff" stroke-width="3" opacity="0"><animate attributeName="r" values="38;38;60;38" keyTimes="0;0.68;0.8;1" dur="10s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.68;0.7;0.85;1" dur="10s" repeatCount="indefinite"/></circle>
+<text x="810" y="182" font-size="16" fill="#e6def5">Tobias</text>
+<text x="810" y="204" font-size="14" fill="#8ec8ff" font-style="italic">hears it at the Well</text>
+
+<!-- confidence labels -->
+<g font-size="20" font-weight="700">
+<text x="150" y="70" fill="#7ee08a" opacity="0">100% sure<animate attributeName="opacity" values="0;1;1;1;1;0" keyTimes="0;0.04;0.3;0.8;0.95;1" dur="10s" repeatCount="indefinite"/></text>
+<text x="480" y="70" fill="#b8e07e" opacity="0">90% sure<animate attributeName="opacity" values="0;0;1;1;1;0" keyTimes="0;0.38;0.44;0.8;0.95;1" dur="10s" repeatCount="indefinite"/></text>
+<text x="810" y="70" fill="#e0c87e" opacity="0">81% sure<animate attributeName="opacity" values="0;0;1;1;1;0" keyTimes="0;0.68;0.74;0.85;0.95;1" dur="10s" repeatCount="indefinite"/></text></g>
+</g>
+<!-- travelling whispers -->
+<g filter="url(#g)">
+<circle r="8" fill="#f2c46d" opacity="0"><animateMotion dur="10s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="0;0.15;0.36;1" calcMode="linear"><mpath href="#e1"/></animateMotion><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.15;0.17;0.34;0.37;1" dur="10s" repeatCount="indefinite"/></circle>
+<circle r="8" fill="#8ec8ff" opacity="0"><animateMotion dur="10s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="0;0.45;0.66;1" calcMode="linear"><mpath href="#e2"/></animateMotion><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.45;0.47;0.64;0.67;1" dur="10s" repeatCount="indefinite"/></circle>
+</g>
+<text x="480" y="236" text-anchor="middle" font-family="Georgia,serif" font-size="13" font-style="italic" fill="#9a8bbb">Each retelling multiplies the listener's confidence by 0.9</text>
+</svg>

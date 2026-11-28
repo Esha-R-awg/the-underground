@@ -46,7 +46,8 @@ listed here so the history stays honest. Kiro's own log is in `docs/kiro-log.md`
 
 ## Repository
 
-- `README.md` written; `vercel.json` and `.nvmrc` added.
+- `README.md` written and later redesigned with an animated banner, an animated
+  rumour diagram and screenshots (`docs/assets/`); `vercel.json` and `.nvmrc` added.
 - Root `package.json`: `npm run dev` now builds the engine first, so it works from a
   fresh clone.
 
